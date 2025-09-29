@@ -1,24 +1,80 @@
-import logo from './logo.svg';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import PclGestion from './components/PclGestion';
+import DictamenIngreso from './components/DictamenIngreso';
+import AdminUsuarios from './components/AdminUsuarios';
+import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
 import './App.css';
 
 function App() {
+  const [user, setUser ] = useState(null); // { email, role }
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const storedUser  = localStorage.getItem('user');
+    if (storedUser ) {
+      setUser (JSON.parse(storedUser ));
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleLogin = (email, password) => {
+    // Simulación de validación
+    if (password === '123') { // Contraseña simple para demo
+      let role = 'Solicitante'; // Default
+      if (email.includes('admin')) role = 'Administrador';
+      else if (email.includes('medico')) role = 'Evaluador Médico';
+      else if (email.includes('revisor')) role = 'Revisor de recursos';
+      
+      const userData = { email, role };
+      setUser (userData);
+      setIsLoggedIn(true);
+      localStorage.setItem('user', JSON.stringify(userData));
+      // Simular fetch a backend
+      console.log('Simulando login a backend:', userData);
+      alert('Login exitoso. Rol asignado: ' + role);
+    } else {
+      alert('Contraseña incorrecta');
+    }
+  };
+
+  const handleLogout = () => {
+    setUser (null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('user');
+  };
+
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="d-flex">
+        <Sidebar user={user} onLogout={handleLogout} />
+        <div className="flex-grow-1 p-3">
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/login" element={<Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={<Dashboard user={user} />} />
+            <Route path="/pcl/gestion" element={<PclGestion user={user} />} />
+            {user.role === 'Evaluador Médico' && (
+              <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
+            )}
+            {user.role === 'Administrador' && (
+              <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
+            )}
+            {user.role === 'Revisor de recursos' && (
+              <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
+            )}
+            <Route path="*" element={<div className="alert alert-warning">Página no encontrada o acceso denegado por rol.</div>} />
+          </Routes>
+        </div>
+      </div>
+    </Router>
   );
 }
 
