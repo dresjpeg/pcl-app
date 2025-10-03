@@ -14,3 +14,23 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.nombre, u.email, u.rol_id, r.nombre AS rolNombre 
+       FROM Usuario u 
+       LEFT JOIN Rol r ON u.rol_id = r.id 
+       WHERE u.email = ? AND u.password = ?`,
+      [email, password]
+    );
+    if (rows.length > 0) {
+      res.json({ usuario: rows[0] });
+    } else {
+      res.status(401).json({ usuario: null, mensaje: 'Credenciales incorrectas' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});

@@ -8,6 +8,7 @@ import DictamenIngreso from './components/DictamenIngreso';
 import AdminUsuarios from './components/AdminUsuarios';
 import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
 import './App.css';
+import axios from 'axios';
 
 function App() {
   const [user, setUser ] = useState(null); // { email, role }
@@ -21,25 +22,31 @@ function App() {
     }
   }, []);
 
-  const handleLogin = (email, password) => {
-    // Simulación de validación
-    if (password === '123') { // Contraseña simple para demo
-      let role = 'Solicitante'; // Default
-      if (email.includes('admin')) role = 'Administrador';
-      else if (email.includes('medico')) role = 'Evaluador Médico';
-      else if (email.includes('revisor')) role = 'Revisor de recursos';
-      
-      const userData = { email, role };
-      setUser (userData);
+ 
+
+const handleLogin = async (email, password) => {
+  try {
+    const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
+    if (response.data?.usuario) {
+      const usuarioBD = response.data.usuario;
+      const userData = {
+        email: usuarioBD.email,
+        nombre: usuarioBD.nombre,
+        role: usuarioBD.rolNombre || 'Sin rol'
+      };
+      setUser(userData);
       setIsLoggedIn(true);
       localStorage.setItem('user', JSON.stringify(userData));
-      // Simular fetch a backend
-      console.log('Simulando login a backend:', userData);
-      alert('Login exitoso. Rol asignado: ' + role);
+      alert('Login exitoso. Rol asignado: ' + userData.role);
     } else {
-      alert('Contraseña incorrecta');
+      alert('Credenciales incorrectas');
     }
-  };
+  } catch (error) {
+    alert('Error conectando al backend');
+  }
+};
+
+
 
   const handleLogout = () => {
     setUser (null);
