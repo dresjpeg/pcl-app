@@ -17,7 +17,7 @@ const getMenuItems = (role) => {
 
     if (role === 'Administrador') {
     baseItems.push({ path: '/admin/usuarios', label: 'Gestión Usuarios' });
-    } else if (role === 'Evaluador Médico') {
+    } else if (role === 'Evaluador Médico' || role === 'Médico') {
     baseItems.push({ path: '/dictamen/ingreso', label: 'Ingreso Dictamen' });
     } else if (role === 'Revisor de recursos') {
     baseItems.push({ path: '/apelaciones/trazabilidad', label: 'Trazabilidad Apelaciones' });

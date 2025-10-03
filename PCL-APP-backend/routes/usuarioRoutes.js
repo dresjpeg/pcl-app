@@ -12,9 +12,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener usuarios' });
   }
 });
-
-module.exports = router;
-
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -34,3 +31,7 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
+
+module.exports = router;
+
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -10,79 +10,96 @@ import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
 import './App.css';
 import axios from 'axios';
 
+// Necesario para usar useNavigate fuera de Router: usar un componente
+function AppWrapper() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}
+
 function App() {
-  const [user, setUser ] = useState(null); // { email, role }
+  const [user, setUser] = useState(null); // { email, role }
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser  = localStorage.getItem('user');
-    if (storedUser ) {
-      setUser (JSON.parse(storedUser ));
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
       setIsLoggedIn(true);
     }
   }, []);
 
- 
+  const handleLogin = async (email, password) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
+      if (response.data?.usuario) {
+        const usuarioBD = response.data.usuario;
+        const userData = {
+          email: usuarioBD.email,
+          nombre: usuarioBD.nombre,
+          role: usuarioBD.rolNombre || 'Sin rol'
+        };
+        setUser(userData);
+        setIsLoggedIn(true);
+        localStorage.setItem('user', JSON.stringify(userData));
+        alert('Login exitoso. Rol asignado: ' + userData.role);
 
-const handleLogin = async (email, password) => {
-  try {
-    const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
-    if (response.data?.usuario) {
-      const usuarioBD = response.data.usuario;
-      const userData = {
-        email: usuarioBD.email,
-        nombre: usuarioBD.nombre,
-        role: usuarioBD.rolNombre || 'Sin rol'
-      };
-      setUser(userData);
-      setIsLoggedIn(true);
-      localStorage.setItem('user', JSON.stringify(userData));
-      alert('Login exitoso. Rol asignado: ' + userData.role);
-    } else {
-      alert('Credenciales incorrectas');
+        // REDIRECCIÓN automática por rol
+        if (userData.role === 'Administrador') {
+          navigate('/admin/usuarios');
+        } else if (userData.role === 'Evaluador Médico' || userData.role === 'Médico') {
+          navigate('/dictamen/ingreso');
+        } else if (userData.role === 'Revisor de recursos') {
+          navigate('/apelaciones/trazabilidad');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        alert('Credenciales incorrectas');
+      }
+    } catch (error) {
+      alert('Error conectando al backend');
     }
-  } catch (error) {
-    alert('Error conectando al backend');
-  }
-};
-
-
+  };
 
   const handleLogout = () => {
-    setUser (null);
+    setUser(null);
     setIsLoggedIn(false);
     localStorage.removeItem('user');
+    navigate('/login');
   };
 
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />;
   }
 
+  // Ya dentro de Router, renderiza Sidebar y las rutas normales
   return (
-    <Router>
-      <div className="d-flex">
-        <Sidebar user={user} onLogout={handleLogout} />
-        <div className="flex-grow-1 p-3">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="/login" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Dashboard user={user} />} />
-            <Route path="/pcl/gestion" element={<PclGestion user={user} />} />
-            {user.role === 'Evaluador Médico' && (
-              <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
-            )}
-            {user.role === 'Administrador' && (
-              <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
-            )}
-            {user.role === 'Revisor de recursos' && (
-              <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
-            )}
-            <Route path="*" element={<div className="alert alert-warning">Página no encontrada o acceso denegado por rol.</div>} />
-          </Routes>
-        </div>
+    <div className="d-flex">
+      <Sidebar user={user} onLogout={handleLogout} />
+      <div className="flex-grow-1 p-3">
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/login" element={<Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard user={user} />} />
+          <Route path="/pcl/gestion" element={<PclGestion user={user} />} />
+          {(user.role === 'Evaluador Médico' || user.role === 'Médico') && (
+          <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
+           )}
+          {user.role === 'Administrador' && (
+          <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
+          )}
+          {user.role === 'Revisor de recursos' && (
+            <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
+          )}
+          <Route path="*" element={<div className="alert alert-warning">Página no encontrada o acceso denegado por rol.</div>} />
+        </Routes>
       </div>
-    </Router>
+    </div>
   );
 }
 
-export default App;
+export default AppWrapper;
