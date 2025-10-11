@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -7,75 +8,114 @@ import PclGestion from './components/PclGestion';
 import DictamenIngreso from './components/DictamenIngreso';
 import AdminUsuarios from './components/AdminUsuarios';
 import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './assets/css/argon-dashboard-react.css';
 import './App.css';
 
-function App() {
-  const [user, setUser ] = useState(null); // { email, role }
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const storedUser  = localStorage.getItem('user');
-    if (storedUser ) {
-      setUser (JSON.parse(storedUser ));
-      setIsLoggedIn(true);
-    }
-  }, []);
-
-  const handleLogin = (email, password) => {
-    // Simulación de validación
-    if (password === '123') { // Contraseña simple para demo
-      let role = 'Solicitante'; // Default
-      if (email.includes('admin')) role = 'Administrador';
-      else if (email.includes('medico')) role = 'Evaluador Médico';
-      else if (email.includes('revisor')) role = 'Revisor de recursos';
-      
-      const userData = { email, role };
-      setUser (userData);
-      setIsLoggedIn(true);
-      localStorage.setItem('user', JSON.stringify(userData));
-      // Simular fetch a backend
-      console.log('Simulando login a backend:', userData);
-      alert('Login exitoso. Rol asignado: ' + role);
-    } else {
-      alert('Contraseña incorrecta');
-    }
-  };
-
-  const handleLogout = () => {
-    setUser (null);
-    setIsLoggedIn(false);
-    localStorage.removeItem('user');
-  };
-
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
-  }
-
+// Wrapper necesario para que useNavigate funcione correctamente
+function AppWrapper() {
   return (
     <Router>
-      <div className="d-flex">
-        <Sidebar user={user} onLogout={handleLogout} />
-        <div className="flex-grow-1 p-3">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="/login" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Dashboard user={user} />} />
-            <Route path="/pcl/gestion" element={<PclGestion user={user} />} />
-            {user.role === 'Evaluador Médico' && (
-              <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
-            )}
-            {user.role === 'Administrador' && (
-              <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
-            )}
-            {user.role === 'Revisor de recursos' && (
-              <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
-            )}
-            <Route path="*" element={<div className="alert alert-warning">Página no encontrada o acceso denegado por rol.</div>} />
-          </Routes>
-        </div>
-      </div>
+      <App />
     </Router>
   );
 }
 
-export default App;
+function App() {
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  // Verificar si hay usuario guardado
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // Login real con backend
+  const handleLogin = async (email, password) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
+
+      if (response.data?.usuario) {
+        const usuarioBD = response.data.usuario;
+        const userData = {
+          email: usuarioBD.email,
+          nombre: usuarioBD.nombre,
+          role: usuarioBD.rolNombre || 'Sin rol',
+        };
+
+        setUser(userData);
+        setIsLoggedIn(true);
+        localStorage.setItem('user', JSON.stringify(userData));
+        alert('Login exitoso. Rol asignado: ' + userData.role);
+
+        // Redirección automática por rol
+        if (userData.role === 'Administrador') {
+          navigate('/admin/usuarios');
+        } else if (userData.role === 'Evaluador Médico' || userData.role === 'Médico') {
+          navigate('/dictamen/ingreso');
+        } else if (userData.role === 'Revisor de recursos') {
+          navigate('/apelaciones/trazabilidad');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        alert('Credenciales incorrectas');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error conectando al backend');
+    }
+  };
+
+  // Logout
+  const handleLogout = () => {
+    setUser(null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('user');
+  };
+
+  // Si no ha iniciado sesión, mostrar login
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  // Interfaz principal
+  return (
+    <div className="main-content d-flex">
+      <Sidebar user={user} onLogout={handleLogout} />
+
+      <div className="content p-4 w-100">
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/login" element={<Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard user={user} />} />
+          <Route path="/pcl/gestion" element={<PclGestion user={user} />} />
+
+          {(user.role === 'Evaluador Médico' || user.role === 'Médico') && (
+            <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
+          )}
+
+          {user.role === 'Administrador' && (
+            <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
+          )}
+
+          {user.role === 'Revisor de recursos' && (
+            <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
+          )}
+
+          <Route
+            path="*"
+            element={<div className="alert alert-warning mt-4">Página no encontrada o acceso denegado por rol.</div>}
+          />
+        </Routes>
+      </div>
+    </div>
+  );
+}
+
+export default AppWrapper;
