@@ -7,33 +7,35 @@ import PclGestion from './components/PclGestion';
 import DictamenIngreso from './components/DictamenIngreso';
 import AdminUsuarios from './components/AdminUsuarios';
 import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
+
+// Estilos del tema Argon + tus estilos personalizados
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './assets/css/argon-dashboard-react.css'; // ← Asegúrate de copiar este archivo desde el tema Argon
 import './App.css';
 
 function App() {
-  const [user, setUser ] = useState(null); // { email, role }
+  const [user, setUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const storedUser  = localStorage.getItem('user');
-    if (storedUser ) {
-      setUser (JSON.parse(storedUser ));
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
       setIsLoggedIn(true);
     }
   }, []);
 
   const handleLogin = (email, password) => {
-    // Simulación de validación
-    if (password === '123') { // Contraseña simple para demo
-      let role = 'Solicitante'; // Default
+    if (password === '123') {
+      let role = 'Solicitante';
       if (email.includes('admin')) role = 'Administrador';
       else if (email.includes('medico')) role = 'Evaluador Médico';
       else if (email.includes('revisor')) role = 'Revisor de recursos';
-      
+
       const userData = { email, role };
-      setUser (userData);
+      setUser(userData);
       setIsLoggedIn(true);
       localStorage.setItem('user', JSON.stringify(userData));
-      // Simular fetch a backend
       console.log('Simulando login a backend:', userData);
       alert('Login exitoso. Rol asignado: ' + role);
     } else {
@@ -42,7 +44,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    setUser (null);
+    setUser(null);
     setIsLoggedIn(false);
     localStorage.removeItem('user');
   };
@@ -53,9 +55,12 @@ function App() {
 
   return (
     <Router>
-      <div className="d-flex">
+      <div className="main-content d-flex">
+        {/* Sidebar de Argon */}
         <Sidebar user={user} onLogout={handleLogout} />
-        <div className="flex-grow-1 p-3">
+
+        {/* Contenido principal */}
+        <div className="content p-4 w-100">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/login" element={<Navigate to="/dashboard" />} />
@@ -70,7 +75,14 @@ function App() {
             {user.role === 'Revisor de recursos' && (
               <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
             )}
-            <Route path="*" element={<div className="alert alert-warning">Página no encontrada o acceso denegado por rol.</div>} />
+            <Route
+              path="*"
+              element={
+                <div className="alert alert-warning mt-4">
+                  Página no encontrada o acceso denegado por rol.
+                </div>
+              }
+            />
           </Routes>
         </div>
       </div>
