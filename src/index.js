@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import AppWrapper from './App';
 import './index.css';
+import "./assets/css/argon-dashboard-react.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
