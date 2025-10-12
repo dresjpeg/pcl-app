@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 
-// Configuración de la URL del backend desde variable de entorno
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
 const DictamenIngreso = () => {
   const [formData, setFormData] = useState({
     cie10: '',
@@ -46,7 +43,7 @@ const DictamenIngreso = () => {
     };
 
     try {
-      const res = await fetch(`${API_URL}/api/dictamen-medico`, {
+      const res = await fetch('http://localhost:5000/api/dictamen-medico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -235,11 +232,10 @@ const DictamenIngreso = () => {
       )}
 
       <div className="mt-3 alert alert-secondary">
-        <small>Conectando con backend (API REST): POST /api/dictamen-medico con datos del formulario.</small>
+        <small>Simulando conexión con backend (API REST): POST /api/dictamen con datos del formulario.</small>
       </div>
     </div>
   );
 };
 
 export default DictamenIngreso;
-
