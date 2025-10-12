@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -11,8 +10,12 @@ import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './assets/css/argon-dashboard-react.css';
 import './App.css';
+import axios from 'axios';
 
-// Wrapper necesario para que useNavigate funcione correctamente
+// Configuración de la URL del backend desde variable de entorno
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+// Wrapper necesario para usar useNavigate fuera del Router
 function AppWrapper() {
   return (
     <Router>
@@ -26,7 +29,6 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
-  // Verificar si hay usuario guardado
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -35,11 +37,9 @@ function App() {
     }
   }, []);
 
-  // Login real con backend
   const handleLogin = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
-
+      const response = await axios.post(`${API_URL}/api/usuarios/login`, { email, password });
       if (response.data?.usuario) {
         const usuarioBD = response.data.usuario;
         const userData = {
@@ -72,23 +72,23 @@ function App() {
     }
   };
 
-  // Logout
   const handleLogout = () => {
     setUser(null);
     setIsLoggedIn(false);
     localStorage.removeItem('user');
+    navigate('/login');
   };
 
-  // Si no ha iniciado sesión, mostrar login
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />;
   }
 
-  // Interfaz principal
   return (
     <div className="main-content d-flex">
+      {/* Sidebar Argon */}
       <Sidebar user={user} onLogout={handleLogout} />
 
+      {/* Contenido principal */}
       <div className="content p-4 w-100">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
