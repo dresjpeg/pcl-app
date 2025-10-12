@@ -12,6 +12,9 @@ import './assets/css/argon-dashboard-react.css';
 import './App.css';
 import axios from 'axios';
 
+// Configuración de la URL del backend desde variable de entorno
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 // Wrapper necesario para usar useNavigate fuera del Router
 function AppWrapper() {
   return (
@@ -36,7 +39,7 @@ function App() {
 
   const handleLogin = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
+      const response = await axios.post(`${API_URL}/api/usuarios/login`, { email, password });
       if (response.data?.usuario) {
         const usuarioBD = response.data.usuario;
         const userData = {

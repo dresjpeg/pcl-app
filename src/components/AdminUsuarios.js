@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+// Configuración de la URL del backend desde variable de entorno
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const AdminUsuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -20,13 +23,13 @@ const AdminUsuarios = () => {
   }, []);
 
   const fetchUsuarios = async () => {
-    const res = await fetch('http://localhost:5000/api/usuarios');
+    const res = await fetch(`${API_URL}/api/usuarios`);
     const data = await res.json();
     setUsuarios(data);
   };
 
   const fetchRoles = async () => {
-    const res = await fetch('http://localhost:5000/api/roles');
+    const res = await fetch(`${API_URL}/api/roles`);
     const data = await res.json();
     setRoles(data);
   };
@@ -56,7 +59,7 @@ const AdminUsuarios = () => {
     try {
       const bodyData = { ...editData };
       if (!bodyData.password) delete bodyData.password; // Solo envía si se llenó nueva contraseña
-      const res = await fetch(`http://localhost:5000/api/usuarios/${id}`, {
+      const res = await fetch(`${API_URL}/api/usuarios/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyData),
@@ -80,7 +83,7 @@ const AdminUsuarios = () => {
   const handleDeleteClick = async (id) => {
     if (!window.confirm('¿Seguro deseas eliminar este usuario?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/usuarios/${id}`, {
+      const res = await fetch(`${API_URL}/api/usuarios/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -97,7 +100,7 @@ const AdminUsuarios = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5000/api/usuarios', {
+      const res = await fetch(`${API_URL}/api/usuarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -328,3 +331,4 @@ const AdminUsuarios = () => {
 };
 
 export default AdminUsuarios;
+

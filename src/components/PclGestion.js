@@ -1,134 +1,203 @@
 import React, { useState, useEffect } from 'react';
 
+// Configuración de la URL del backend desde variable de entorno
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const PclGestion = ({ user }) => {
-  const [pclData, setPclData] = useState([]); // Mock data
-const [searchTerm, setSearchTerm] = useState('');
+  const [pclData, setPclData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(''); // 'add', 'edit', 'delete'
-const [currentPcl, setCurrentPcl] = useState({ id: '', nombre: '', descripcion: '' });
+  const [currentPcl, setCurrentPcl] = useState({ id: '', nombre: '', descripcion: '' });
+  const [loading, setLoading] = useState(false);
 
-useEffect(() => {
-    // Simular fetch de lista PCL
-    const mockData = [
-    { id: 1, nombre: 'PCL-001', descripcion: 'Caso de prueba 1' },
-    { id: 2, nombre: 'PCL-002', descripcion: 'Caso de prueba 2' },
-    ];
-    setPclData(mockData);
-    console.log('Simulando GET /api/pcl');
-}, []);
+  useEffect(() => {
+    fetchPclData();
+  }, []);
 
-const filteredData = pclData.filter(pcl =>
+  const fetchPclData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/pcl`);
+      if (response.ok) {
+        const data = await response.json();
+        setPclData(data);
+      } else {
+        console.error('Error al obtener datos de PCL');
+        // Fallback a datos mock si falla
+        const mockData = [
+          { id: 1, nombre: 'PCL-001', descripcion: 'Caso de prueba 1' },
+          { id: 2, nombre: 'PCL-002', descripcion: 'Caso de prueba 2' },
+        ];
+        setPclData(mockData);
+      }
+    } catch (error) {
+      console.error('Error conectando al backend:', error);
+      // Fallback a datos mock si falla
+      const mockData = [
+        { id: 1, nombre: 'PCL-001', descripcion: 'Caso de prueba 1' },
+        { id: 2, nombre: 'PCL-002', descripcion: 'Caso de prueba 2' },
+      ];
+      setPclData(mockData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = pclData.filter(pcl =>
     pcl.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-);
+  );
 
-const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    // Simular POST
-    console.log('Simulando POST /api/pcl', currentPcl);
-    alert('PCL añadido (simulado)');
-    setPclData([...pclData, { ...currentPcl, id: Date.now() }]);
-    setShowForm('');
-};
+    try {
+      const response = await fetch(`${API_URL}/api/pcl`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentPcl),
+      });
+      
+      if (response.ok) {
+        alert('PCL añadido exitosamente');
+        fetchPclData();
+        setShowForm('');
+        setCurrentPcl({ id: '', nombre: '', descripcion: '' });
+      } else {
+        alert('Error al añadir PCL');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
 
-const handleEdit = (pcl) => {
+  const handleEdit = (pcl) => {
     setCurrentPcl(pcl);
     setShowForm('edit');
-};
+  };
 
-const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    // Simular PUT
-    console.log('Simulando PUT /api/pcl/' + currentPcl.id, currentPcl);
-    alert('PCL actualizado (simulado)');
-    setPclData(pclData.map(p => p.id === currentPcl.id ? currentPcl : p));
-    setShowForm('');
-};
-
-const handleDelete = (id) => {
-    if (window.confirm('Eliminar?')) {
-      // Simular DELETE
-    console.log('Simulando DELETE /api/pcl/' + id);
-    alert('PCL eliminado (simulado)');
-    setPclData(pclData.filter(p => p.id !== id));
+    try {
+      const response = await fetch(`${API_URL}/api/pcl/${currentPcl.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentPcl),
+      });
+      
+      if (response.ok) {
+        alert('PCL actualizado exitosamente');
+        fetchPclData();
+        setShowForm('');
+      } else {
+        alert('Error al actualizar PCL');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al conectar con el servidor');
     }
-};
+  };
 
-  const canEdit = user.role === 'Administrador' || user.role === 'Evaluador Médico'; // Asumir permisos
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Está seguro de eliminar este PCL?')) {
+      try {
+        const response = await fetch(`${API_URL}/api/pcl/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {
+          alert('PCL eliminado exitosamente');
+          fetchPclData();
+        } else {
+          alert('Error al eliminar PCL');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al conectar con el servidor');
+      }
+    }
+  };
 
-return (
+  const canEdit = user.role === 'Administrador' || user.role === 'Evaluador Médico';
+
+  if (loading) {
+    return <div className="container mt-4"><p>Cargando...</p></div>;
+  }
+
+  return (
     <div className="container mt-4 table-section">
-    <h2>Gestión de PCL</h2>
-    <div className="mb-3">
+      <h2>Gestión de PCL</h2>
+      <div className="mb-3">
         <input
-        type="text"
-        className="form-control"
-        placeholder="Buscar PCL..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+          type="text"
+          className="form-control"
+          placeholder="Buscar PCL..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-    </div>
-    <table className="table table-striped">
+      </div>
+      <table className="table table-striped">
         <thead>
-        <tr>
+          <tr>
             <th>ID</th>
             <th>Nombre</th>
             <th>Descripción</th>
             {canEdit && <th>Acciones</th>}
-        </tr>
+          </tr>
         </thead>
         <tbody>
-        {filteredData.map(pcl => (
+          {filteredData.map(pcl => (
             <tr key={pcl.id}>
-            <td>{pcl.id}</td>
-            <td>{pcl.nombre}</td>
-            <td>{pcl.descripcion}</td>
-            {canEdit && (
+              <td>{pcl.id}</td>
+              <td>{pcl.nombre}</td>
+              <td>{pcl.descripcion}</td>
+              {canEdit && (
                 <td>
-                <button className="btn btn-sm btn-warning me-2" onClick={() => handleEdit(pcl)}>Editar</button>
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(pcl.id)}>Eliminar</button>
+                  <button className="btn btn-sm btn-warning me-2" onClick={() => handleEdit(pcl)}>Editar</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(pcl.id)}>Eliminar</button>
                 </td>
-            )}
+              )}
             </tr>
-        ))}
+          ))}
         </tbody>
-    </table>
+      </table>
 
-    {canEdit && (
+      {canEdit && (
         <>
-        <button className="btn btn-primary mb-3" onClick={() => { setShowForm('add'); setCurrentPcl({ id: '', nombre: '', descripcion: '' }); }}>
+          <button className="btn btn-primary mb-3" onClick={() => { setShowForm('add'); setCurrentPcl({ id: '', nombre: '', descripcion: '' }); }}>
             Añadir PCL
-        </button>
+          </button>
 
-        {showForm === 'add' && (
+          {showForm === 'add' && (
             <form onSubmit={handleAdd} className="card p-3">
-            <h4>Añadir PCL</h4>
-            <div className="mb-3">
+              <h4>Añadir PCL</h4>
+              <div className="mb-3">
                 <input type="text" className="form-control" placeholder="Nombre" value={currentPcl.nombre} onChange={(e) => setCurrentPcl({ ...currentPcl, nombre: e.target.value })} required />
-            </div>
-            <div className="mb-3">
+              </div>
+              <div className="mb-3">
                 <textarea className="form-control" placeholder="Descripción" value={currentPcl.descripcion} onChange={(e) => setCurrentPcl({ ...currentPcl, descripcion: e.target.value })} required />
-            </div>
-            <button type="submit" className="btn btn-success">Añadir</button>
-            <button type="button" className="btn btn-secondary ms-2" onClick={() => setShowForm('')}>Cancelar</button>
+              </div>
+              <button type="submit" className="btn btn-success">Añadir</button>
+              <button type="button" className="btn btn-secondary ms-2" onClick={() => setShowForm('')}>Cancelar</button>
             </form>
-        )}
+          )}
 
-        {showForm === 'edit' && (
+          {showForm === 'edit' && (
             <form onSubmit={handleUpdate} className="card p-3">
-            <h4>Editar PCL</h4>
-            <div className="mb-3">
+              <h4>Editar PCL</h4>
+              <div className="mb-3">
                 <input type="text" className="form-control" placeholder="Nombre" value={currentPcl.nombre} onChange={(e) => setCurrentPcl({ ...currentPcl, nombre: e.target.value })} required />
-            </div>
-            <div className="mb-3">
+              </div>
+              <div className="mb-3">
                 <textarea className="form-control" placeholder="Descripción" value={currentPcl.descripcion} onChange={(e) => setCurrentPcl({ ...currentPcl, descripcion: e.target.value })} required />
-            </div>
-            <button type="submit" className="btn btn-success">Actualizar</button>
-            <button type="button" className="btn btn-secondary ms-2" onClick={() => setShowForm('')}>Cancelar</button>
+              </div>
+              <button type="submit" className="btn btn-success">Actualizar</button>
+              <button type="button" className="btn btn-secondary ms-2" onClick={() => setShowForm('')}>Cancelar</button>
             </form>
-        )}
+          )}
         </>
-    )}
+      )}
     </div>
-);
+  );
 };
 
-export default PclGestion
+export default PclGestion;
