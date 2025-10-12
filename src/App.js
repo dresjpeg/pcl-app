@@ -7,12 +7,10 @@ import PclGestion from './components/PclGestion';
 import DictamenIngreso from './components/DictamenIngreso';
 import AdminUsuarios from './components/AdminUsuarios';
 import ApelacionesTrazabilidad from './components/ApelacionesTrazabilidad';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './assets/css/argon-dashboard-react.css';
 import './App.css';
 import axios from 'axios';
 
-// Wrapper necesario para usar useNavigate fuera del Router
+// Necesario para usar useNavigate fuera de Router: usar un componente
 function AppWrapper() {
   return (
     <Router>
@@ -22,7 +20,7 @@ function AppWrapper() {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // { email, role }
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
@@ -42,15 +40,14 @@ function App() {
         const userData = {
           email: usuarioBD.email,
           nombre: usuarioBD.nombre,
-          role: usuarioBD.rolNombre || 'Sin rol',
+          role: usuarioBD.rolNombre || 'Sin rol'
         };
-
         setUser(userData);
         setIsLoggedIn(true);
         localStorage.setItem('user', JSON.stringify(userData));
         alert('Login exitoso. Rol asignado: ' + userData.role);
 
-        // Redirección automática por rol
+        // REDIRECCIÓN automática por rol
         if (userData.role === 'Administrador') {
           navigate('/admin/usuarios');
         } else if (userData.role === 'Evaluador Médico' || userData.role === 'Médico') {
@@ -64,7 +61,6 @@ function App() {
         alert('Credenciales incorrectas');
       }
     } catch (error) {
-      console.error(error);
       alert('Error conectando al backend');
     }
   };
@@ -80,35 +76,26 @@ function App() {
     return <Login onLogin={handleLogin} />;
   }
 
+  // Ya dentro de Router, renderiza Sidebar y las rutas normales
   return (
-    <div className="main-content d-flex">
-      {/* Sidebar Argon */}
+    <div className="d-flex">
       <Sidebar user={user} onLogout={handleLogout} />
-
-      {/* Contenido principal */}
-      <div className="content p-4 w-100">
+      <div className="flex-grow-1 p-3">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/login" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/pcl/gestion" element={<PclGestion user={user} />} />
-
           {(user.role === 'Evaluador Médico' || user.role === 'Médico') && (
-            <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
-          )}
-
+          <Route path="/dictamen/ingreso" element={<DictamenIngreso user={user} />} />
+           )}
           {user.role === 'Administrador' && (
-            <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
+          <Route path="/admin/usuarios" element={<AdminUsuarios user={user} />} />
           )}
-
           {user.role === 'Revisor de recursos' && (
             <Route path="/apelaciones/trazabilidad" element={<ApelacionesTrazabilidad user={user} />} />
           )}
-
-          <Route
-            path="*"
-            element={<div className="alert alert-warning mt-4">Página no encontrada o acceso denegado por rol.</div>}
-          />
+          <Route path="*" element={<div className="alert alert-warning">Página no encontrada o acceso denegado por rol.</div>} />
         </Routes>
       </div>
     </div>
