@@ -1,35 +1,219 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Dashboard = ({ user }) => {
-  // Datos mock para notificaciones y casos
-const notifications = ['Notificación 1: Nuevo PCL asignado.', 'Notificación 2: Dictamen pendiente.'];
-const casos = ['Caso PCL-001: En revisión', 'Caso PCL-002: Aprobado'];
+  const [stats, setStats] = useState({
+    total: 0,
+    pendientes: 0,
+    aprobados: 0,
+    rechazados: 0,
+    recientes: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-return (
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:5000/api/pcl/stats');
+      setStats(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error al obtener estadísticas:', err);
+      setError('Error al cargar las estadísticas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEstadoBadgeClass = (estado) => {
+    switch (estado) {
+      case 'pendiente':
+        return 'bg-warning text-dark';
+      case 'aprobado':
+        return 'bg-success';
+      case 'rechazado':
+        return 'bg-danger';
+      default:
+        return 'bg-secondary';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mt-4">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p className="mt-2">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mt-4">
+        <div className="alert alert-danger" role="alert">
+          {error}
+          <button className="btn btn-sm btn-outline-danger ms-3" onClick={fetchStats}>
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="container mt-4">
-    <h2>Bienvenido, {user.email} ({user.role})</h2>
-    <div className="row">
-        <div className="col-md-6">
-        <h4>Notificaciones Automáticas</h4>
-        <ul className="list-group">
-            {notifications.map((notif, index) => (
-            <li key={index} className="list-group-item">{notif}</li>
-            ))}
-        </ul>
+      <h2 className="mb-4">Bienvenido, {user.nombre || user.email}</h2>
+      <p className="text-muted">Rol: <strong>{user.role}</strong></p>
+
+      {/* Estadísticas en Cards */}
+      <div className="row mb-4">
+        <div className="col-md-3">
+          <div className="card text-white bg-primary">
+            <div className="card-body">
+              <h5 className="card-title">Total PCL</h5>
+              <h2 className="card-text">{stats.total}</h2>
+            </div>
+          </div>
         </div>
-        <div className="col-md-6">
-        <h4>Resumen de Casos</h4>
-        <ul className="list-group">
-            {casos.map((caso, index) => (
-            <li key={index} className="list-group-item">{caso}</li>
-            ))}
-        </ul>
+        <div className="col-md-3">
+          <div className="card text-white bg-warning">
+            <div className="card-body">
+              <h5 className="card-title">Pendientes</h5>
+              <h2 className="card-text">{stats.pendientes}</h2>
+            </div>
+          </div>
         </div>
+        <div className="col-md-3">
+          <div className="card text-white bg-success">
+            <div className="card-body">
+              <h5 className="card-title">Aprobados</h5>
+              <h2 className="card-text">{stats.aprobados}</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card text-white bg-danger">
+            <div className="card-body">
+              <h5 className="card-title">Rechazados</h5>
+              <h2 className="card-text">{stats.rechazados}</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Casos Recientes */}
+      <div className="row">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-header">
+              <h4 className="mb-0">Casos Recientes</h4>
+            </div>
+            <div className="card-body">
+              {stats.recientes.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Paciente</th>
+                        <th>Solicitante</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.recientes.map((pcl) => (
+                        <tr key={pcl.id}>
+                          <td>#{pcl.id}</td>
+                          <td>{new Date(pcl.fecha).toLocaleDateString('es-ES')}</td>
+                          <td>{pcl.paciente}</td>
+                          <td>{pcl.solicitante_nombre || 'N/A'}</td>
+                          <td>
+                            <span className={`badge ${getEstadoBadgeClass(pcl.estado)}`}>
+                              {pcl.estado.toUpperCase()}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-muted">No hay casos recientes</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notificaciones (Simuladas por ahora) */}
+      <div className="row mt-4">
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-header">
+              <h5 className="mb-0">Notificaciones</h5>
+            </div>
+            <div className="card-body">
+              <ul className="list-group list-group-flush">
+                {stats.pendientes > 0 && (
+                  <li className="list-group-item">
+                    <i className="bi bi-exclamation-circle text-warning"></i> 
+                    {' '}Tienes {stats.pendientes} PCL pendientes de revisión
+                  </li>
+                )}
+                {stats.recientes.length > 0 && (
+                  <li className="list-group-item">
+                    <i className="bi bi-info-circle text-info"></i>
+                    {' '}Último PCL ingresado: {stats.recientes[0].paciente}
+                  </li>
+                )}
+                {stats.total === 0 && (
+                  <li className="list-group-item text-muted">
+                    No hay notificaciones nuevas
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Accesos Rápidos */}
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-header">
+              <h5 className="mb-0">Accesos Rápidos</h5>
+            </div>
+            <div className="card-body">
+              <div className="d-grid gap-2">
+                <a href="/pcl/gestion" className="btn btn-outline-primary">
+                  <i className="bi bi-folder"></i> Gestión de PCL
+                </a>
+                {(user.role === 'Evaluador Médico' || user.role === 'Médico') && (
+                  <a href="/dictamen/ingreso" className="btn btn-outline-success">
+                    <i className="bi bi-clipboard-plus"></i> Ingresar Dictamen
+                  </a>
+                )}
+                {user.role === 'Administrador' && (
+                  <a href="/admin/usuarios" className="btn btn-outline-warning">
+                    <i className="bi bi-people"></i> Administrar Usuarios
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-      {/* Simular fetch */}
-    <p className="mt-3">Simulando carga de dashboard desde backend...</p>
-    </div>
-);
+  );
 };
 
 export default Dashboard;
