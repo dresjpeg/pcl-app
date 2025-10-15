@@ -34,7 +34,11 @@ function App() {
 
   const handleLogin = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password });
+      const response = await axios.post('http://localhost:5000/api/usuarios/login', { email, password }).catch(err => {
+        if (err.response && err.response.status === 401) {
+          throw new Error('Credenciales incorrectas');
+        }
+      });
       if (response.data?.usuario) {
         const usuarioBD = response.data.usuario;
         const userData = {
@@ -57,11 +61,9 @@ function App() {
         } else {
           navigate('/dashboard');
         }
-      } else {
-        alert('Credenciales incorrectas');
-      }
+      } 
     } catch (error) {
-      alert('Error conectando al backend');
+      alert(error.message || 'Error en el servidor');
     }
   };
 

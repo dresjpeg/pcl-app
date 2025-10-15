@@ -21,6 +21,11 @@ router.get('/', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
+
+    if (!pool) {
+      throw new Error('Database pool not initialized');
+    }
+
     const [rows] = await pool.query(
       `SELECT u.id, u.nombre, u.email, u.rol_id, r.nombre AS rolNombre 
        FROM Usuario u 
@@ -28,13 +33,18 @@ router.post('/login', async (req, res) => {
        WHERE u.email = ? AND u.password = ?`,
       [email, password]
     );
+
+    console.log(rows)
+    
     if (rows.length > 0) {
       res.json({ usuario: rows[0] });
     } else {
       res.status(401).json({ usuario: null, mensaje: 'Credenciales incorrectas' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Error en el servidor' });
+    console.error('Database error:', error.message);
+    console.error('Full error:', error);
+    res.status(500).json({ error: 'Error en el servidor', detalle: error.message });
   }
 });
 
