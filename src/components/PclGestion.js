@@ -39,10 +39,11 @@ const PclGestion = ({ user }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Determinar rol del usuario (asumiendo que viene del login)
+  // Determinar rol del usuario (mantengo esto por si lo usas en otros lugares, pero ya no afecta la edición)
   const rolUsuario = user?.rol || localStorage.getItem("rol") || "usuario";
-  const puedeEditar = rolUsuario === "medico" || rolUsuario === "admin";
-  const puedeEliminar = rolUsuario === "admin";
+  // Cambios: Permitir editar y eliminar a todos los usuarios, sin importar el rol
+  const puedeEditar = true;  // Antes: rolUsuario === "medico" || rolUsuario === "admin";
+  const puedeEliminar = true;  // Antes: rolUsuario === "admin";
   const puedeCrear = rolUsuario === "medico" || rolUsuario === "admin";
 
   useEffect(() => {
@@ -93,7 +94,10 @@ const PclGestion = ({ user }) => {
   };
 
   const handleEdit = (pcl) => {
-    if (!puedeEditar) return alert("No tienes permisos para editar.");
+    // Cambios: Quitar todas las verificaciones de roles y restricciones
+    // Antes: if (!puedeEditar) { alert("No tienes permisos para editar."); return; }
+    // Antes: Restricciones para médicos (solo propios y pendientes) eliminadas
+
     setCurrentPcl({
       ...pcl,
       fecha: pcl.fecha.split("T")[0],
@@ -263,7 +267,7 @@ const PclGestion = ({ user }) => {
         </CardContent>
       </Card>
 
-      {/* FORMULARIO DESPLEGABLE */}
+      {/* FORMULARIO */}
       <Collapse in={showForm === "add" || showForm === "edit"}>
         <Card
           sx={{
@@ -285,8 +289,12 @@ const PclGestion = ({ user }) => {
                 : "Añadir nuevo PCL"}
             </Typography>
 
-            {/* Si no puede crear, no mostrar formulario */}
-            {!puedeCrear ? (
+            {/* Cambios: Permitir el formulario si puedes editar (para edit) o crear (para add) */}
+            {showForm === "edit" && !puedeEditar ? (
+              <Typography color="error">
+                No tienes permisos para editar dictámenes.
+              </Typography>
+            ) : showForm === "add" && !puedeCrear ? (
               <Typography color="error">
                 No tienes permisos para crear dictámenes.
               </Typography>
