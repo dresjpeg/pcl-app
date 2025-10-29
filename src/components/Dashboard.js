@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Configuración de la URL del backend desde variable de entorno
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const Dashboard = ({ user }) => {
   const [stats, setStats] = useState({
     total: 0,
@@ -9,22 +12,30 @@ const Dashboard = ({ user }) => {
     rechazados: 0,
     recientes: []
   });
+  const [dictamenes, setDictamenes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchStats();
+    fetchData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/pcl/stats');
-      setStats(response.data);
+      
+      // Obtener estadísticas de PCL
+      const statsResponse = await axios.get(`${API_URL}/api/pcl/stats`);
+      setStats(statsResponse.data);
+      
+      // Obtener dictámenes médicos recientes
+      const dictamenesResponse = await axios.get(`${API_URL}/api/dictamen-medico`);
+      setDictamenes(dictamenesResponse.data.slice(0, 5)); // Últimos 5
+      
       setError(null);
     } catch (err) {
-      console.error('Error al obtener estadísticas:', err);
-      setError('Error al cargar las estadísticas');
+      console.error('Error al obtener datos:', err);
+      setError('Error al cargar el dashboard');
     } finally {
       setLoading(false);
     }
@@ -61,7 +72,7 @@ const Dashboard = ({ user }) => {
       <div className="container mt-4">
         <div className="alert alert-danger" role="alert">
           {error}
-          <button className="btn btn-sm btn-outline-danger ms-3" onClick={fetchStats}>
+          <button className="btn btn-sm btn-outline-danger ms-3" onClick={fetchData}>
             Reintentar
           </button>
         </div>
@@ -110,12 +121,12 @@ const Dashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Casos Recientes */}
-      <div className="row">
+      {/* Casos PCL Recientes */}
+      <div className="row mb-4">
         <div className="col-12">
           <div className="card">
             <div className="card-header">
-              <h4 className="mb-0">Casos Recientes</h4>
+              <h4 className="mb-0">Casos PCL Recientes</h4>
             </div>
             <div className="card-body">
               {stats.recientes.length > 0 ? (
@@ -148,14 +159,59 @@ const Dashboard = ({ user }) => {
                   </table>
                 </div>
               ) : (
-                <p className="text-muted">No hay casos recientes</p>
+                <p className="text-muted">No hay casos PCL recientes</p>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Notificaciones (Simuladas por ahora) */}
+      {/* Dictámenes Médicos Recientes */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-header bg-info text-white">
+              <h4 className="mb-0">Dictámenes Médicos Recientes</h4>
+            </div>
+            <div className="card-body">
+              {dictamenes.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Diagnóstico</th>
+                        <th>CIE-10</th>
+                        <th>Algoritmo</th>
+                        <th>Resultado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dictamenes.map((dictamen) => (
+                        <tr key={dictamen.id}>
+                          <td>#{dictamen.id}</td>
+                          <td>{dictamen.diagnostico?.substring(0, 50) || 'N/A'}...</td>
+                          <td><span className="badge bg-secondary">{dictamen.cie10}</span></td>
+                          <td>{dictamen.algoritmo}</td>
+                          <td>
+                            <span className={`badge ${dictamen.resultado?.includes('Alto') ? 'bg-danger' : 'bg-success'}`}>
+                              {dictamen.resultado}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-muted">No hay dictámenes médicos recientes</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notificaciones y Accesos Rápidos */}
       <div className="row mt-4">
         <div className="col-md-6">
           <div className="card">
@@ -170,13 +226,19 @@ const Dashboard = ({ user }) => {
                     {' '}Tienes {stats.pendientes} PCL pendientes de revisión
                   </li>
                 )}
+                {dictamenes.length > 0 && (
+                  <li className="list-group-item">
+                    <i className="bi bi-clipboard-check text-success"></i>
+                    {' '}{dictamenes.length} dictámenes médicos registrados recientemente
+                  </li>
+                )}
                 {stats.recientes.length > 0 && (
                   <li className="list-group-item">
                     <i className="bi bi-info-circle text-info"></i>
                     {' '}Último PCL ingresado: {stats.recientes[0].paciente}
                   </li>
                 )}
-                {stats.total === 0 && (
+                {stats.total === 0 && dictamenes.length === 0 && (
                   <li className="list-group-item text-muted">
                     No hay notificaciones nuevas
                   </li>

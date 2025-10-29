@@ -14,6 +14,8 @@ const pclRoutes = require('./routes/pclRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
 const dictamenRoutes = require('./routes/dictamenRoutes');
 const rolesRoutes = require('./routes/rolesRoutes');
+const medicoRoutes = require('./routes/medicoRoutes');
+
 
 
 
@@ -22,6 +24,8 @@ app.use('/api/pcl', pclRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/dictamen-medico', dictamenRoutes);
 app.use('/api/roles', rolesRoutes);
+app.use('/api/medicos', medicoRoutes);
+
 
 // Ruta de prueba
 app.get('/', (req, res) => {
