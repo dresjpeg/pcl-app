@@ -1,10 +1,44 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Collapse,
+  Grid,
+  IconButton,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Typography,
+  Paper,
+  Tooltip,
+} from '@mui/material';
+import {
+  Edit,
+  Delete,
+  Save,
+  Cancel,
+  Add,
+  PersonAddAlt1,
+} from '@mui/icons-material';
 
 const AdminUsuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
+  const [openForm, setOpenForm] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -41,7 +75,7 @@ const AdminUsuarios = () => {
 
   const handleEditClick = (index) => {
     setEditIndex(index);
-    setEditData({ ...usuarios[index], password: '' });  // Password vacío por seguridad
+    setEditData({ ...usuarios[index], password: '' });
   };
 
   const handleEditChange = (e) => {
@@ -55,7 +89,7 @@ const AdminUsuarios = () => {
   const handleSaveClick = async (id) => {
     try {
       const bodyData = { ...editData };
-      if (!bodyData.password) delete bodyData.password; // Solo envía si se llenó nueva contraseña
+      if (!bodyData.password) delete bodyData.password;
       const res = await fetch(`http://localhost:5000/api/usuarios/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -111,6 +145,7 @@ const AdminUsuarios = () => {
           rol_id: '',
           activo: true,
         });
+        setOpenForm(false);
         fetchUsuarios();
       } else {
         alert('Error creando usuario');
@@ -121,209 +156,204 @@ const AdminUsuarios = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Gestión de Usuarios (Administrador)</h2>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h5" fontWeight={600} gutterBottom>
+        Gestión de Usuarios (Administrador)
+      </Typography>
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Rol</th>
-            <th>Activo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {usuarios.map((u, index) => (
-            <tr key={u.id}>
-              <td>
-                {editIndex === index ? (
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={editData.nombre}
-                    onChange={handleEditChange}
-                    className="form-control"
-                  />
-                ) : (
-                  u.nombre
-                )}
-              </td>
-              <td>
-                {editIndex === index ? (
-                  <input
-                    type="email"
-                    name="email"
-                    value={editData.email}
-                    onChange={handleEditChange}
-                    className="form-control"
-                  />
-                ) : (
-                  u.email
-                )}
-              </td>
-              <td>
-                {editIndex === index ? (
-                  <select
-                    name="rol_id"
-                    value={editData.rol_id}
-                    onChange={handleEditChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccionar rol</option>
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.nombre}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  u.rol
-                )}
-              </td>
-              <td>
-                {editIndex === index ? (
-                  <input
-                    type="checkbox"
-                    name="activo"
-                    checked={editData.activo}
-                    onChange={handleEditChange}
-                  />
-                ) : u.activo ? (
-                  'Sí'
-                ) : (
-                  'No'
-                )}
-              </td>
-              <td>
-                {editIndex === index ? (
-                  <>
-                    <input
-                      type="password"
-                      name="password"
-                      value={editData.password || ''}
+      <Button
+        variant="contained"
+        startIcon={<PersonAddAlt1 />}
+        sx={{
+          mb: 2,
+          background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
+          color: 'white',
+          fontWeight: 'bold',
+        }}
+        onClick={() => setOpenForm(!openForm)}
+      >
+        {openForm ? 'Cerrar formulario' : 'Agregar nuevo usuario'}
+      </Button>
+
+      <Collapse in={openForm}>
+        <Card sx={{ mb: 3, p: 2 }}>
+          <CardHeader title="Nuevo Usuario" />
+          <CardContent>
+            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2 }}>
+              <TextField
+                label="Nombre"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleChange}
+                required
+              />
+              <TextField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+              <TextField
+                label="Contraseña"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <FormControl fullWidth>
+                <InputLabel>Rol</InputLabel>
+                <Select
+                  name="rol_id"
+                  value={formData.rol_id}
+                  label="Rol"
+                  onChange={handleChange}
+                  required
+                >
+                  {roles.map((r) => (
+                    <MenuItem key={r.id} value={r.id}>
+                      {r.nombre}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography>Activo</Typography>
+                <Switch
+                  checked={formData.activo}
+                  name="activo"
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, activo: e.target.checked }))
+                  }
+                />
+              </Box>
+              <Button type="submit" variant="contained" sx={{ mt: 1 }}>
+                Crear Usuario
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Collapse>
+
+      <TableContainer component={Paper} elevation={4}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableCell><b>Nombre</b></TableCell>
+              <TableCell><b>Email</b></TableCell>
+              <TableCell><b>Rol</b></TableCell>
+              <TableCell><b>Activo</b></TableCell>
+              <TableCell align="center"><b>Acciones</b></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {usuarios.map((u, index) => (
+              <TableRow key={u.id}>
+                <TableCell>
+                  {editIndex === index ? (
+                    <TextField
+                      name="nombre"
+                      value={editData.nombre}
                       onChange={handleEditChange}
-                      className="form-control mb-2"
-                      placeholder="Nuevo password (opcional)"
-                      autoComplete="new-password"
                     />
-                    <button
-                      className="btn btn-success btn-sm me-2"
-                      onClick={() => handleSaveClick(u.id)}
-                    >
-                      Guardar
-                    </button>
-                    <button
-                      className="btn btn-secondary btn-sm me-2"
-                      onClick={handleCancelClick}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDeleteClick(u.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="btn btn-primary btn-sm me-2"
-                      onClick={() => handleEditClick(index)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDeleteClick(u.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h4>Agregar Usuario</h4>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label>Nombre</label>
-          <input
-            type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
-            required
-            className="form-control"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="form-control"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="form-control"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label>Rol</label>
-          <select
-            name="rol_id"
-            value={formData.rol_id}
-            onChange={handleChange}
-            required
-            className="form-select"
-          >
-            <option value="">Seleccionar rol</option>
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.nombre}
-              </option>
+                  ) : (
+                    u.nombre
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editIndex === index ? (
+                    <TextField
+                      name="email"
+                      type="email"
+                      value={editData.email}
+                      onChange={handleEditChange}
+                    />
+                  ) : (
+                    u.email
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editIndex === index ? (
+                    <FormControl fullWidth>
+                      <Select
+                        name="rol_id"
+                        value={editData.rol_id}
+                        onChange={handleEditChange}
+                      >
+                        {roles.map((r) => (
+                          <MenuItem key={r.id} value={r.id}>
+                            {r.nombre}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  ) : (
+                    u.rol
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editIndex === index ? (
+                    <Switch
+                      checked={editData.activo}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          activo: e.target.checked,
+                        }))
+                      }
+                    />
+                  ) : u.activo ? (
+                    'Sí'
+                  ) : (
+                    'No'
+                  )}
+                </TableCell>
+                <TableCell align="center">
+                  {editIndex === index ? (
+                    <>
+                      <TextField
+                        name="password"
+                        type="password"
+                        placeholder="Nuevo password (opcional)"
+                        value={editData.password || ''}
+                        onChange={handleEditChange}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                      <Tooltip title="Guardar cambios">
+                        <IconButton color="success" onClick={() => handleSaveClick(u.id)}>
+                          <Save />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Cancelar">
+                        <IconButton color="secondary" onClick={handleCancelClick}>
+                          <Cancel />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  ) : (
+                    <>
+                      <Tooltip title="Editar">
+                        <IconButton color="primary" onClick={() => handleEditClick(index)}>
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Eliminar">
+                        <IconButton color="error" onClick={() => handleDeleteClick(u.id)}>
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  )}
+                </TableCell>
+              </TableRow>
             ))}
-          </select>
-        </div>
-
-        <div className="mb-3 form-check">
-          <input
-            type="checkbox"
-            name="activo"
-            checked={formData.activo}
-            onChange={handleChange}
-            className="form-check-input"
-            id="activo"
-          />
-          <label htmlFor="activo" className="form-check-label">
-            Activo
-          </label>
-        </div>
-
-        <button type="submit" className="btn btn-primary">
-          Crear Usuario
-        </button>
-      </form>
-    </div>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 };
 

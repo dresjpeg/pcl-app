@@ -1,8 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+  Alert,
+  Button,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Stack,
+  Divider,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import {
+  Refresh as RefreshIcon,
+  Assignment as AssignmentIcon,
+  CheckCircle as CheckIcon,
+  Error as ErrorIcon,
+  HourglassEmpty as PendingIcon,
+  Notifications as NotificationsIcon,
+  Folder as FolderIcon,
+  AddCircle as AddIcon,
+  Group as GroupIcon,
+} from "@mui/icons-material";
 
-// Configuración de la URL del backend desde variable de entorno
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const Dashboard = ({ user }) => {
   const [stats, setStats] = useState({
@@ -10,7 +44,7 @@ const Dashboard = ({ user }) => {
     pendientes: 0,
     aprobados: 0,
     rechazados: 0,
-    recientes: []
+    recientes: [],
   });
   const [dictamenes, setDictamenes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,258 +57,267 @@ const Dashboard = ({ user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Obtener estadísticas de PCL
       const statsResponse = await axios.get(`${API_URL}/api/pcl/stats`);
       setStats(statsResponse.data);
-      
-      // Obtener dictámenes médicos recientes
+
       const dictamenesResponse = await axios.get(`${API_URL}/api/dictamen-medico`);
-      setDictamenes(dictamenesResponse.data.slice(0, 5)); // Últimos 5
-      
+      setDictamenes(dictamenesResponse.data.slice(0, 5));
+
       setError(null);
     } catch (err) {
-      console.error('Error al obtener datos:', err);
-      setError('Error al cargar el dashboard');
+      console.error("Error al obtener datos:", err);
+      setError("Error al cargar el dashboard");
     } finally {
       setLoading(false);
     }
   };
 
-  const getEstadoBadgeClass = (estado) => {
-    switch (estado) {
-      case 'pendiente':
-        return 'bg-warning text-dark';
-      case 'aprobado':
-        return 'bg-success';
-      case 'rechazado':
-        return 'bg-danger';
-      default:
-        return 'bg-secondary';
-    }
-  };
-
-  if (loading) {
+  if (loading)
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-2">Cargando dashboard...</p>
-        </div>
-      </div>
+      <Box textAlign="center" mt={10}>
+        <CircularProgress color="primary" />
+        <Typography variant="body1" mt={2}>
+          Cargando dashboard...
+        </Typography>
+      </Box>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger" role="alert">
+      <Box p={4}>
+        <Alert severity="error" action={<Button onClick={fetchData}>Reintentar</Button>}>
           {error}
-          <button className="btn btn-sm btn-outline-danger ms-3" onClick={fetchData}>
-            Reintentar
-          </button>
-        </div>
-      </div>
+        </Alert>
+      </Box>
     );
-  }
 
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4">Bienvenido, {user.nombre || user.email}</h2>
-      <p className="text-muted">Rol: <strong>{user.role}</strong></p>
+    <Box sx={{ backgroundColor: "#f5f6fa", minHeight: "100vh" }}>
+      {/* Barra superior */}
+      <AppBar position="static" sx={{ backgroundColor: "#1976d2" }}>
+        <Toolbar>
+          <AssignmentIcon sx={{ mr: 2 }} />
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Panel de Control - Bienvenido, {user.nombre || user.email}
+          </Typography>
+          <Tooltip title="Actualizar datos">
+            <IconButton color="inherit" onClick={fetchData}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </AppBar>
 
-      {/* Estadísticas en Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card text-white bg-primary">
-            <div className="card-body">
-              <h5 className="card-title">Total PCL</h5>
-              <h2 className="card-text">{stats.total}</h2>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card text-white bg-warning">
-            <div className="card-body">
-              <h5 className="card-title">Pendientes</h5>
-              <h2 className="card-text">{stats.pendientes}</h2>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card text-white bg-success">
-            <div className="card-body">
-              <h5 className="card-title">Aprobados</h5>
-              <h2 className="card-text">{stats.aprobados}</h2>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card text-white bg-danger">
-            <div className="card-body">
-              <h5 className="card-title">Rechazados</h5>
-              <h2 className="card-text">{stats.rechazados}</h2>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Box p={4}>
+        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+          Rol: <strong>{user.role}</strong>
+        </Typography>
 
-      {/* Casos PCL Recientes */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header">
-              <h4 className="mb-0">Casos PCL Recientes</h4>
-            </div>
-            <div className="card-body">
-              {stats.recientes.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Fecha</th>
-                        <th>Paciente</th>
-                        <th>Solicitante</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.recientes.map((pcl) => (
-                        <tr key={pcl.id}>
-                          <td>#{pcl.id}</td>
-                          <td>{new Date(pcl.fecha).toLocaleDateString('es-ES')}</td>
-                          <td>{pcl.paciente}</td>
-                          <td>{pcl.solicitante_nombre || 'N/A'}</td>
-                          <td>
-                            <span className={`badge ${getEstadoBadgeClass(pcl.estado)}`}>
-                              {pcl.estado.toUpperCase()}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-muted">No hay casos PCL recientes</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Cards de estadísticas */}
+        <Grid container spacing={3} mb={4}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ backgroundColor: "#1976d2", color: "white" }}>
+              <CardContent>
+                <Typography variant="h6">Total PCL</Typography>
+                <Typography variant="h3">{stats.total}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ backgroundColor: "#ffb300", color: "white" }}>
+              <CardContent>
+                <Typography variant="h6">Pendientes</Typography>
+                <Typography variant="h3">{stats.pendientes}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ backgroundColor: "#2e7d32", color: "white" }}>
+              <CardContent>
+                <Typography variant="h6">Aprobados</Typography>
+                <Typography variant="h3">{stats.aprobados}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ backgroundColor: "#d32f2f", color: "white" }}>
+              <CardContent>
+                <Typography variant="h6">Rechazados</Typography>
+                <Typography variant="h3">{stats.rechazados}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
-      {/* Dictámenes Médicos Recientes */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header bg-info text-white">
-              <h4 className="mb-0">Dictámenes Médicos Recientes</h4>
-            </div>
-            <div className="card-body">
-              {dictamenes.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Diagnóstico</th>
-                        <th>CIE-10</th>
-                        <th>Algoritmo</th>
-                        <th>Resultado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dictamenes.map((dictamen) => (
-                        <tr key={dictamen.id}>
-                          <td>#{dictamen.id}</td>
-                          <td>{dictamen.diagnostico?.substring(0, 50) || 'N/A'}...</td>
-                          <td><span className="badge bg-secondary">{dictamen.cie10}</span></td>
-                          <td>{dictamen.algoritmo}</td>
-                          <td>
-                            <span className={`badge ${dictamen.resultado?.includes('Alto') ? 'bg-danger' : 'bg-success'}`}>
-                              {dictamen.resultado}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-muted">No hay dictámenes médicos recientes</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Casos PCL recientes */}
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Casos PCL Recientes
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            {stats.recientes.length > 0 ? (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: "#1976d2" }}>
+                    <TableRow>
+                      <TableCell sx={{ color: "white" }}>ID</TableCell>
+                      <TableCell sx={{ color: "white" }}>Fecha</TableCell>
+                      <TableCell sx={{ color: "white" }}>Paciente</TableCell>
+                      <TableCell sx={{ color: "white" }}>Solicitante</TableCell>
+                      <TableCell sx={{ color: "white" }}>Estado</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {stats.recientes.map((pcl) => (
+                      <TableRow key={pcl.id} hover>
+                        <TableCell>#{pcl.id}</TableCell>
+                        <TableCell>
+                          {new Date(pcl.fecha).toLocaleDateString("es-ES")}
+                        </TableCell>
+                        <TableCell>{pcl.paciente}</TableCell>
+                        <TableCell>{pcl.solicitante_nombre || "N/A"}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={pcl.estado.toUpperCase()}
+                            color={
+                              pcl.estado === "aprobado"
+                                ? "success"
+                                : pcl.estado === "rechazado"
+                                ? "error"
+                                : "warning"
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary">No hay casos recientes</Typography>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Notificaciones y Accesos Rápidos */}
-      <div className="row mt-4">
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">Notificaciones</h5>
-            </div>
-            <div className="card-body">
-              <ul className="list-group list-group-flush">
-                {stats.pendientes > 0 && (
-                  <li className="list-group-item">
-                    <i className="bi bi-exclamation-circle text-warning"></i> 
-                    {' '}Tienes {stats.pendientes} PCL pendientes de revisión
-                  </li>
-                )}
-                {dictamenes.length > 0 && (
-                  <li className="list-group-item">
-                    <i className="bi bi-clipboard-check text-success"></i>
-                    {' '}{dictamenes.length} dictámenes médicos registrados recientemente
-                  </li>
-                )}
-                {stats.recientes.length > 0 && (
-                  <li className="list-group-item">
-                    <i className="bi bi-info-circle text-info"></i>
-                    {' '}Último PCL ingresado: {stats.recientes[0].paciente}
-                  </li>
-                )}
-                {stats.total === 0 && dictamenes.length === 0 && (
-                  <li className="list-group-item text-muted">
-                    No hay notificaciones nuevas
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
+        {/* Dictámenes médicos recientes */}
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h5" gutterBottom color="primary">
+              Dictámenes Médicos Recientes
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            {dictamenes.length > 0 ? (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: "#0288d1" }}>
+                    <TableRow>
+                      <TableCell sx={{ color: "white" }}>ID</TableCell>
+                      <TableCell sx={{ color: "white" }}>Diagnóstico</TableCell>
+                      <TableCell sx={{ color: "white" }}>CIE-10</TableCell>
+                      <TableCell sx={{ color: "white" }}>Algoritmo</TableCell>
+                      <TableCell sx={{ color: "white" }}>Resultado</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {dictamenes.map((d) => (
+                      <TableRow key={d.id} hover>
+                        <TableCell>#{d.id}</TableCell>
+                        <TableCell>{d.diagnostico?.substring(0, 50)}...</TableCell>
+                        <TableCell>{d.cie10}</TableCell>
+                        <TableCell>{d.algoritmo}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={d.resultado}
+                            color={d.resultado?.includes("Alto") ? "error" : "success"}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary">No hay dictámenes recientes</Typography>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Accesos Rápidos */}
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">Accesos Rápidos</h5>
-            </div>
-            <div className="card-body">
-              <div className="d-grid gap-2">
-                <a href="/pcl/gestion" className="btn btn-outline-primary">
-                  <i className="bi bi-folder"></i> Gestión de PCL
-                </a>
-                {(user.role === 'Evaluador Médico' || user.role === 'Médico') && (
-                  <a href="/dictamen/ingreso" className="btn btn-outline-success">
-                    <i className="bi bi-clipboard-plus"></i> Ingresar Dictamen
-                  </a>
-                )}
-                {user.role === 'Administrador' && (
-                  <a href="/admin/usuarios" className="btn btn-outline-warning">
-                    <i className="bi bi-people"></i> Administrar Usuarios
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        {/* Notificaciones y accesos rápidos */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <NotificationsIcon sx={{ mr: 1, verticalAlign: "middle" }} />
+                  Notificaciones
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Stack spacing={1}>
+                  {stats.pendientes > 0 && (
+                    <Typography>
+                      <PendingIcon color="warning" /> Tienes {stats.pendientes} PCL pendientes
+                    </Typography>
+                  )}
+                  {dictamenes.length > 0 && (
+                    <Typography>
+                      <CheckIcon color="success" /> {dictamenes.length} dictámenes registrados
+                    </Typography>
+                  )}
+                  {stats.recientes.length > 0 && (
+                    <Typography>
+                      <ErrorIcon color="info" /> Último PCL ingresado:{" "}
+                      {stats.recientes[0].paciente}
+                    </Typography>
+                  )}
+                  {stats.total === 0 && dictamenes.length === 0 && (
+                    <Typography color="text.secondary">
+                      No hay notificaciones nuevas
+                    </Typography>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Accesos Rápidos
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Stack spacing={2}>
+                  <Button variant="outlined" startIcon={<FolderIcon />} href="/pcl/gestion">
+                    Gestión de PCL
+                  </Button>
+                  {(user.role === "Evaluador Médico" || user.role === "Médico") && (
+                    <Button
+                      variant="outlined"
+                      color="success"
+                      startIcon={<AddIcon />}
+                      href="/dictamen/ingreso"
+                    >
+                      Ingresar Dictamen
+                    </Button>
+                  )}
+                  {user.role === "Administrador" && (
+                    <Button
+                      variant="outlined"
+                      color="warning"
+                      startIcon={<GroupIcon />}
+                      href="/admin/usuarios"
+                    >
+                      Administrar Usuarios
+                    </Button>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    </Box>
   );
 };
 

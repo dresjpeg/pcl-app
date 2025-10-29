@@ -1,20 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Collapse,
+  Divider,
+} from "@mui/material";
+import { AddCircle, Edit, Delete } from "@mui/icons-material";
 
 const PclGestion = ({ user }) => {
   const [pclData, setPclData] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterEstado, setFilterEstado] = useState('todos');
-  const [showForm, setShowForm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterEstado, setFilterEstado] = useState("todos");
+  const [showForm, setShowForm] = useState("");
   const [currentPcl, setCurrentPcl] = useState({
-    id: '',
-    fecha: '',
-    paciente: '',
-    estado: 'pendiente',
-    solicitante_id: user.id || 1
+    id: "",
+    fecha: "",
+    paciente: "",
+    estado: "pendiente",
+    dictamen: "",
+    solicitante_id: user?.id || 1,
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  // Determinar rol del usuario (asumiendo que viene del login)
+  const rolUsuario = user?.rol || localStorage.getItem("rol") || "usuario";
+  const puedeEditar = rolUsuario === "medico" || rolUsuario === "admin";
+  const puedeEliminar = rolUsuario === "admin";
+  const puedeCrear = rolUsuario === "medico" || rolUsuario === "admin";
 
   useEffect(() => {
     fetchPcl();
@@ -23,355 +52,341 @@ const PclGestion = ({ user }) => {
   const fetchPcl = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/pcl');
+      const response = await axios.get("http://localhost:5000/api/pcl");
       setPclData(response.data);
-      setError(null);
     } catch (err) {
-      console.error('Error al obtener PCL:', err);
-      setError('Error al cargar los datos. Verifica que el backend esté corriendo.');
+      console.error("Error al obtener PCL:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredData = pclData.filter(pcl => {
-    const matchSearch = pcl.paciente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        pcl.id.toString().includes(searchTerm);
-    const matchEstado = filterEstado === 'todos' || pcl.estado === filterEstado;
+  const filteredData = pclData.filter((pcl) => {
+    const matchSearch =
+      pcl.paciente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pcl.id.toString().includes(searchTerm);
+    const matchEstado = filterEstado === "todos" || pcl.estado === filterEstado;
     return matchSearch && matchEstado;
   });
+
+  const resetForm = () => {
+    setCurrentPcl({
+      id: "",
+      fecha: "",
+      paciente: "",
+      estado: "pendiente",
+      dictamen: "",
+      solicitante_id: user?.id || 1,
+    });
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/pcl', currentPcl);
-      alert('PCL añadido exitosamente');
+      await axios.post("http://localhost:5000/api/pcl", currentPcl);
       fetchPcl();
-      setShowForm('');
+      setShowForm("");
       resetForm();
     } catch (err) {
-      console.error('Error al añadir PCL:', err);
-      alert('Error al añadir PCL');
+      console.error("Error al añadir PCL:", err);
     }
   };
 
   const handleEdit = (pcl) => {
+    if (!puedeEditar) return alert("No tienes permisos para editar.");
     setCurrentPcl({
       ...pcl,
-      fecha: pcl.fecha.split('T')[0] // Formatear fecha para input type="date"
+      fecha: pcl.fecha.split("T")[0],
     });
-    setShowForm('edit');
+    setShowForm("edit");
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/pcl/${currentPcl.id}`, currentPcl);
-      alert('PCL actualizado exitosamente');
+      await axios.put(
+        `http://localhost:5000/api/pcl/${currentPcl.id}`,
+        currentPcl
+      );
       fetchPcl();
-      setShowForm('');
+      setShowForm("");
       resetForm();
     } catch (err) {
-      console.error('Error al actualizar PCL:', err);
-      alert('Error al actualizar PCL');
+      console.error("Error al actualizar PCL:", err);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Está seguro de eliminar este PCL?')) {
+    if (!puedeEliminar) return alert("Solo el administrador puede eliminar registros.");
+    if (window.confirm("¿Está seguro de eliminar este PCL?")) {
       try {
         await axios.delete(`http://localhost:5000/api/pcl/${id}`);
-        alert('PCL eliminado exitosamente');
         fetchPcl();
       } catch (err) {
-        console.error('Error al eliminar PCL:', err);
-        alert('Error al eliminar PCL');
+        console.error("Error al eliminar PCL:", err);
       }
     }
   };
 
-  const resetForm = () => {
-    setCurrentPcl({
-      id: '',
-      fecha: '',
-      paciente: '',
-      estado: 'pendiente',
-      solicitante_id: user.id || 1
-    });
-  };
-
-  const canEdit = user.role === 'Administrador' || user.role === 'Evaluador Médico' || user.role === 'Médico';
-
-  const getEstadoBadgeClass = (estado) => {
+  const getChipColor = (estado) => {
     switch (estado) {
-      case 'pendiente':
-        return 'bg-warning text-dark';
-      case 'aprobado':
-        return 'bg-success';
-      case 'rechazado':
-        return 'bg-danger';
+      case "pendiente":
+        return "warning";
+      case "aprobado":
+        return "success";
+      case "rechazado":
+        return "error";
       default:
-        return 'bg-secondary';
+        return "default";
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-2">Cargando datos...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger" role="alert">
-          {error}
-          <button className="btn btn-sm btn-outline-danger ms-3" onClick={fetchPcl}>
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4">Gestión de PCL</h2>
+    <Box sx={{ p: 4, bgcolor: "#f5f6fa", minHeight: "100vh" }}>
+      <Typography variant="h4" fontWeight="bold" sx={{ mb: 3, color: "#333" }}>
+        Gestión de PCL
+      </Typography>
 
-      {/* Filtros y búsqueda */}
-      <div className="row mb-3">
-        <div className="col-md-6">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Buscar por paciente o ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="col-md-3">
-          <select
-            className="form-select"
+      {/* FILTROS */}
+      <Box display="flex" gap={2} mb={3}>
+        <TextField
+          label="Buscar por paciente o ID"
+          variant="outlined"
+          fullWidth
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel>Estado</InputLabel>
+          <Select
             value={filterEstado}
             onChange={(e) => setFilterEstado(e.target.value)}
+            label="Estado"
           >
-            <option value="todos">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="aprobado">Aprobado</option>
-            <option value="rechazado">Rechazado</option>
-          </select>
-        </div>
-        <div className="col-md-3">
-          {canEdit && (
-            <button
-              className="btn btn-primary w-100"
-              onClick={() => {
-                setShowForm('add');
-                resetForm();
-              }}
-            >
-              <i className="bi bi-plus-circle"></i> Añadir PCL
-            </button>
-          )}
-        </div>
-      </div>
+            <MenuItem value="todos">Todos</MenuItem>
+            <MenuItem value="pendiente">Pendiente</MenuItem>
+            <MenuItem value="aprobado">Aprobado</MenuItem>
+            <MenuItem value="rechazado">Rechazado</MenuItem>
+          </Select>
+        </FormControl>
 
-      {/* Tabla de PCL */}
-      <div className="card">
-        <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Fecha</th>
-                  <th>Paciente</th>
-                  <th>Solicitante</th>
-                  <th>Estado</th>
-                  {canEdit && <th>Acciones</th>}
-                </tr>
-              </thead>
-              <tbody>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddCircle />}
+            onClick={() => {
+              setShowForm("add");
+              resetForm();
+            }}
+          >
+            Añadir PCL
+          </Button>
+        )}
+      </Box>
+
+      {/* TABLA */}
+      <Card sx={{ mb: 2, boxShadow: 3 }}>
+        <CardContent>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>Paciente</TableCell>
+                  <TableCell>Solicitante</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredData.length > 0 ? (
                   filteredData.map((pcl) => (
-                    <tr key={pcl.id}>
-                      <td>#{pcl.id}</td>
-                      <td>{new Date(pcl.fecha).toLocaleDateString('es-ES')}</td>
-                      <td>{pcl.paciente}</td>
-                      <td>{pcl.solicitante_nombre || 'N/A'}</td>
-                      <td>
-                        <span className={`badge ${getEstadoBadgeClass(pcl.estado)}`}>
-                          {pcl.estado.toUpperCase()}
-                        </span>
-                      </td>
-                      {canEdit && (
-                        <td>
-                          <button
-                            className="btn btn-sm btn-warning me-2"
+                    <TableRow key={pcl.id} hover>
+                      <TableCell>#{pcl.id}</TableCell>
+                      <TableCell>
+                        {new Date(pcl.fecha).toLocaleDateString("es-ES")}
+                      </TableCell>
+                      <TableCell>{pcl.paciente}</TableCell>
+                      <TableCell>{pcl.solicitante_nombre || "N/A"}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={pcl.estado.toUpperCase()}
+                          color={getChipColor(pcl.estado)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {puedeEditar && (
+                          <Button
+                            variant="outlined"
+                            color="warning"
+                            size="small"
+                            startIcon={<Edit />}
                             onClick={() => handleEdit(pcl)}
+                            sx={{ mr: 1 }}
                           >
-                            <i className="bi bi-pencil"></i> Editar
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
+                            Editar
+                          </Button>
+                        )}
+                        {puedeEliminar && (
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            startIcon={<Delete />}
                             onClick={() => handleDelete(pcl.id)}
                           >
-                            <i className="bi bi-trash"></i> Eliminar
-                          </button>
-                        </td>
-                      )}
-                    </tr>
+                            Eliminar
+                          </Button>
+                        )}
+                        {!puedeEditar && !puedeEliminar && (
+                          <Typography variant="caption" color="text.secondary">
+                            Sin permisos
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={canEdit ? 6 : 5} className="text-center text-muted">
-                      No se encontraron resultados
-                    </td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Typography color="text.secondary">
+                        No se encontraron resultados
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
 
-      {/* Formulario de Añadir */}
-      {showForm === 'add' && (
-        <div className="card mt-3">
-          <div className="card-header bg-primary text-white">
-            <h5 className="mb-0">Añadir Nuevo PCL</h5>
-          </div>
-          <div className="card-body">
-            <form onSubmit={handleAdd}>
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Fecha</label>
-                  <input
+      {/* FORMULARIO DESPLEGABLE */}
+      <Collapse in={showForm === "add" || showForm === "edit"}>
+        <Card
+          sx={{
+            mt: 2,
+            boxShadow: 4,
+            borderLeft: "6px solid",
+            borderColor: showForm === "edit" ? "#f5b041" : "#3498db",
+          }}
+        >
+          <CardContent>
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              color={showForm === "edit" ? "warning.main" : "primary.main"}
+              mb={2}
+            >
+              {showForm === "edit"
+                ? `Editar PCL #${currentPcl.id}`
+                : "Añadir nuevo PCL"}
+            </Typography>
+
+            {/* Si no puede crear, no mostrar formulario */}
+            {!puedeCrear ? (
+              <Typography color="error">
+                No tienes permisos para crear dictámenes.
+              </Typography>
+            ) : (
+              <form onSubmit={showForm === "edit" ? handleUpdate : handleAdd}>
+                <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+                  <TextField
+                    label="Fecha"
                     type="date"
-                    className="form-control"
+                    InputLabelProps={{ shrink: true }}
                     value={currentPcl.fecha}
-                    onChange={(e) => setCurrentPcl({ ...currentPcl, fecha: e.target.value })}
+                    onChange={(e) =>
+                      setCurrentPcl({ ...currentPcl, fecha: e.target.value })
+                    }
                     required
                   />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Paciente</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Nombre del paciente"
+                  <TextField
+                    label="Paciente"
                     value={currentPcl.paciente}
-                    onChange={(e) => setCurrentPcl({ ...currentPcl, paciente: e.target.value })}
+                    onChange={(e) =>
+                      setCurrentPcl({ ...currentPcl, paciente: e.target.value })
+                    }
                     required
                   />
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Estado</label>
-                <select
-                  className="form-select"
-                  value={currentPcl.estado}
-                  onChange={(e) => setCurrentPcl({ ...currentPcl, estado: e.target.value })}
-                >
-                  <option value="pendiente">Pendiente</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="rechazado">Rechazado</option>
-                </select>
-              </div>
-              <div className="d-flex gap-2">
-                <button type="submit" className="btn btn-success">
-                  <i className="bi bi-check-circle"></i> Añadir
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowForm('')}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                </Box>
 
-      {/* Formulario de Editar */}
-      {showForm === 'edit' && (
-        <div className="card mt-3">
-          <div className="card-header bg-warning">
-            <h5 className="mb-0">Editar PCL #{currentPcl.id}</h5>
-          </div>
-          <div className="card-body">
-            <form onSubmit={handleUpdate}>
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Fecha</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={currentPcl.fecha}
-                    onChange={(e) => setCurrentPcl({ ...currentPcl, fecha: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Paciente</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Nombre del paciente"
-                    value={currentPcl.paciente}
-                    onChange={(e) => setCurrentPcl({ ...currentPcl, paciente: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Estado</label>
-                <select
-                  className="form-select"
-                  value={currentPcl.estado}
-                  onChange={(e) => setCurrentPcl({ ...currentPcl, estado: e.target.value })}
+                <Box
+                  display="grid"
+                  gridTemplateColumns="1fr 1fr"
+                  gap={2}
+                  mt={2}
                 >
-                  <option value="pendiente">Pendiente</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="rechazado">Rechazado</option>
-                </select>
-              </div>
-              <div className="d-flex gap-2">
-                <button type="submit" className="btn btn-success">
-                  <i className="bi bi-check-circle"></i> Actualizar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowForm('')}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <FormControl fullWidth>
+                    <InputLabel>Estado</InputLabel>
+                    <Select
+                      value={currentPcl.estado}
+                      onChange={(e) =>
+                        setCurrentPcl({
+                          ...currentPcl,
+                          estado: e.target.value,
+                        })
+                      }
+                    >
+                      <MenuItem value="pendiente">Pendiente</MenuItem>
+                      <MenuItem value="aprobado">Aprobado</MenuItem>
+                      <MenuItem value="rechazado">Rechazado</MenuItem>
+                    </Select>
+                  </FormControl>
 
-      {/* Resumen */}
-      <div className="card mt-3">
-        <div className="card-body">
-          <p className="mb-0">
+                  <TextField
+                    label="Dictamen"
+                    multiline
+                    rows={2}
+                    value={currentPcl.dictamen}
+                    onChange={(e) =>
+                      setCurrentPcl({
+                        ...currentPcl,
+                        dictamen: e.target.value,
+                      })
+                    }
+                    placeholder="Escribe el dictamen médico..."
+                  />
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                <Box display="flex" gap={2}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="success"
+                    sx={{ flex: 1 }}
+                  >
+                    {showForm === "edit" ? "Actualizar" : "Añadir"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    sx={{ flex: 1 }}
+                    onClick={() => setShowForm("")}
+                  >
+                    Cancelar
+                  </Button>
+                </Box>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </Collapse>
+
+      {/* RESUMEN */}
+      <Card sx={{ mt: 3, boxShadow: 2 }}>
+        <CardContent>
+          <Typography variant="body1">
             <strong>Total de registros:</strong> {filteredData.length}
-            {filterEstado !== 'todos' && ` (Filtrado por: ${filterEstado})`}
-          </p>
-        </div>
-      </div>
-    </div>
+            {filterEstado !== "todos" && ` (Filtrado por: ${filterEstado})`}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

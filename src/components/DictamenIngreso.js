@@ -1,24 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  MenuItem,
+  Slider,
+  Alert,
+  Divider,
+} from "@mui/material";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import CleaningServicesIcon from "@mui/icons-material/CleaningServices";
 
 const DictamenIngreso = () => {
   const [formData, setFormData] = useState({
-    cie10: '',
-    algoritmoBaltazar: '',
-    paciente: '',
-    diagnostico: '',
-    fecha: '',
-    observaciones: '',
+    cie10: "",
+    algoritmoBaltazar: "",
+    paciente: "",
+    diagnostico: "",
+    fecha: "",
+    observaciones: "",
     puntuacionBaltazar: 0,
-    resultado: '',
-    medicoId: '', // Campo para ID del médico
+    resultado: "",
+    medicoId: "",
   });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleBaltazarChange = (e) => {
-    const value = parseInt(e.target.value) || 0;
+  const handleBaltazarChange = (_, value) => {
     setFormData({ ...formData, puntuacionBaltazar: value });
   };
 
@@ -26,215 +39,236 @@ const DictamenIngreso = () => {
     e.preventDefault();
 
     if (!formData.medicoId) {
-      alert('Por favor ingresa el ID del médico evaluador.');
+      alert("Por favor ingresa el ID del médico evaluador.");
       return;
     }
 
-    const mockResultado = formData.puntuacionBaltazar > 5
-      ? 'Alto riesgo (Requiere intervención inmediata)'
-      : 'Bajo riesgo (Monitoreo estándar)';
+    const mockResultado =
+      formData.puntuacionBaltazar > 5
+        ? "Alto riesgo (Requiere intervención inmediata)"
+        : "Bajo riesgo (Monitoreo estándar)";
 
     const payload = {
       diagnostico: formData.diagnostico,
       cie10: formData.cie10,
       evaluador_id: formData.medicoId,
-      algoritmo: 'Baltazar',
+      algoritmo: "Baltazar",
       resultado: mockResultado,
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/dictamen-medico', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("http://localhost:5000/api/dictamen-medico", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (res.ok) {
-        alert(data.mensaje);
+        alert(data.mensaje || "Dictamen registrado correctamente.");
         setFormData({
-          cie10: '',
-          algoritmoBaltazar: '',
-          paciente: '',
-          diagnostico: '',
-          fecha: '',
-          observaciones: '',
+          cie10: "",
+          algoritmoBaltazar: "",
+          paciente: "",
+          diagnostico: "",
+          fecha: "",
+          observaciones: "",
           puntuacionBaltazar: 0,
-          resultado: '',
-          medicoId: '',
+          resultado: "",
+          medicoId: "",
         });
       } else {
-        alert('Error guardando dictamen');
+        alert("Error guardando dictamen");
       }
     } catch (error) {
-      alert('Error de conexión con el servidor');
+      alert("Error de conexión con el servidor");
     }
   };
 
   return (
-    <div className="container mt-4 form-section">
-      <h2>Ingreso de Dictamen (Evaluador Médico)</h2>
-      <p className="text-muted">
-        Formulario extenso para ingresar dictamen médico. Simulación de catálogos y algoritmos.
-      </p>
-      <form onSubmit={handleSubmit} className="card p-4">
+    <Box sx={{ p: 4, bgcolor: "#f5f6fa", minHeight: "100vh" }}>
+      <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
+        Ingreso de Dictamen Médico
+      </Typography>
+      <Typography color="text.secondary" sx={{ mb: 3 }}>
+        Formulario para registrar dictámenes médicos y aplicar el algoritmo Baltazar.
+      </Typography>
 
-        <div className="mb-3">
-          <label htmlFor="medicoId" className="form-label">
-            ID Evaluador Médico
-          </label>
-          <input
-            type="number"
-            className="form-control"
-            id="medicoId"
-            name="medicoId"
-            value={formData.medicoId}
-            onChange={handleChange}
-            required
-          />
-        </div>
+      <Card sx={{ boxShadow: 4 }}>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            {/* ID Médico */}
+            <TextField
+              label="ID Evaluador Médico"
+              name="medicoId"
+              type="number"
+              fullWidth
+              required
+              value={formData.medicoId}
+              onChange={handleChange}
+              sx={{ mb: 3 }}
+            />
 
-        {/* Resto de campos que ya tenías */}
-        <div className="row">
-          <div className="col-md-6">
-            <div className="mb-3">
-              <label htmlFor="paciente" className="form-label">Nombre del Paciente</label>
-              <input
-                type="text"
-                className="form-control"
-                id="paciente"
+            {/* Paciente y Fecha */}
+            <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+              <TextField
+                label="Nombre del Paciente"
                 name="paciente"
+                fullWidth
+                required
                 value={formData.paciente}
                 onChange={handleChange}
-                required
               />
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="mb-3">
-              <label htmlFor="fecha" className="form-label">Fecha de Evaluación</label>
-              <input
-                type="date"
-                className="form-control"
-                id="fecha"
+              <TextField
+                label="Fecha de Evaluación"
                 name="fecha"
+                type="date"
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
                 value={formData.fecha}
                 onChange={handleChange}
-                required
               />
-            </div>
-          </div>
-        </div>
+            </Box>
 
-        <div className="mb-3">
-          <label htmlFor="cie10" className="form-label">Catálogo CIE-10 (Selección simulada)</label>
-          <select
-            className="form-control"
-            id="cie10"
-            name="cie10"
-            value={formData.cie10}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Seleccionar Código CIE-10</option>
-            <option value="A00">A00 - Cólera</option>
-            <option value="J45">J45 - Asma</option>
-            <option value="K21">K21 - Enfermedad por reflujo gastroesofágico</option>
-            <option value="M79">M79 - Trastornos musculares</option>
-            <option value="R10">R10 - Dolor abdominal y pélvico</option>
-            <option value="I10">I10 - Hipertensión esencial</option>
-            <option value="E11">E11 - Diabetes mellitus tipo 2</option>
-          </select>
-          <div className="form-text">Selecciona un código para el diagnóstico principal.</div>
-        </div>
-
-        <div className="mb-3">
-          <label htmlFor="diagnostico" className="form-label">Diagnóstico Detallado</label>
-          <textarea
-            className="form-control"
-            id="diagnostico"
-            name="diagnostico"
-            rows="4"
-            value={formData.diagnostico}
-            onChange={handleChange}
-            required
-          />
-          <div className="form-text">Describe el diagnóstico basado en el CIE-10 seleccionado.</div>
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">Aplicación del Algoritmo Baltazar (Simulación)</label>
-          <div className="alert alert-info">
-            <p>
-              El Algoritmo Baltazar evalúa el riesgo pancreático. Ingresa una puntuación simulada (0-10) basada en factores clínicos (ej: amilasa, leucocitos, etc.).
-            </p>
-          </div>
-          <div className="input-group">
-            <span className="input-group-text">Puntuación Baltazar</span>
-            <input
-              type="range"
-              className="form-range"
-              id="puntuacionBaltazar"
-              name="puntuacionBaltazar"
-              min="0"
-              max="10"
-              value={formData.puntuacionBaltazar}
-              onChange={handleBaltazarChange}
+            {/* CIE10 */}
+            <TextField
+              select
+              label="Código CIE-10"
+              name="cie10"
+              fullWidth
               required
+              value={formData.cie10}
+              onChange={handleChange}
+              sx={{ mt: 3 }}
+              helperText="Selecciona un código para el diagnóstico principal"
+            >
+              <MenuItem value="">Seleccionar Código</MenuItem>
+              <MenuItem value="A00">A00 - Cólera</MenuItem>
+              <MenuItem value="J45">J45 - Asma</MenuItem>
+              <MenuItem value="K21">K21 - Reflujo gastroesofágico</MenuItem>
+              <MenuItem value="M79">M79 - Trastornos musculares</MenuItem>
+              <MenuItem value="R10">R10 - Dolor abdominal y pélvico</MenuItem>
+              <MenuItem value="I10">I10 - Hipertensión esencial</MenuItem>
+              <MenuItem value="E11">E11 - Diabetes mellitus tipo 2</MenuItem>
+            </TextField>
+
+            {/* Diagnóstico */}
+            <TextField
+              label="Diagnóstico Detallado"
+              name="diagnostico"
+              multiline
+              rows={4}
+              fullWidth
+              required
+              sx={{ mt: 3 }}
+              value={formData.diagnostico}
+              onChange={handleChange}
             />
-            <span className="input-group-text">{formData.puntuacionBaltazar}</span>
-          </div>
-          <div className="form-text">
-            {formData.puntuacionBaltazar > 5 ? 'Alto riesgo simulado' : 'Bajo riesgo simulado'}
-          </div>
-        </div>
 
-        <div className="mb-3">
-          <label htmlFor="observaciones" className="form-label">Observaciones Adicionales</label>
-          <textarea
-            className="form-control"
-            id="observaciones"
-            name="observaciones"
-            rows="3"
-            value={formData.observaciones}
-            onChange={handleChange}
-          />
-        </div>
+            {/* Algoritmo Baltazar */}
+            <Box sx={{ mt: 4 }}>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                El algoritmo Baltazar evalúa el riesgo pancreático. Asigna una
+                puntuación (0–10) simulada.
+              </Alert>
 
-        <button type="submit" className="btn btn-primary">Ingresar Dictamen</button>
-        <button
-          type="button"
-          className="btn btn-secondary ms-2"
-          onClick={() =>
-            setFormData({
-              cie10: '',
-              algoritmoBaltazar: '',
-              paciente: '',
-              diagnostico: '',
-              fecha: '',
-              observaciones: '',
-              puntuacionBaltazar: 0,
-              resultado: '',
-              medicoId: '',
-            })
-          }
-        >
-          Limpiar Formulario
-        </button>
-      </form>
+              <Typography gutterBottom>
+                Puntuación Baltazar: {formData.puntuacionBaltazar}
+              </Typography>
+              <Slider
+                name="puntuacionBaltazar"
+                value={formData.puntuacionBaltazar}
+                onChange={handleBaltazarChange}
+                step={1}
+                min={0}
+                max={10}
+                marks
+                valueLabelDisplay="auto"
+              />
+              <Typography
+                color={
+                  formData.puntuacionBaltazar > 5 ? "error.main" : "success.main"
+                }
+              >
+                {formData.puntuacionBaltazar > 5
+                  ? "Alto riesgo simulado"
+                  : "Bajo riesgo simulado"}
+              </Typography>
+            </Box>
 
+            {/* Observaciones */}
+            <TextField
+              label="Observaciones Adicionales"
+              name="observaciones"
+              multiline
+              rows={3}
+              fullWidth
+              sx={{ mt: 3 }}
+              value={formData.observaciones}
+              onChange={handleChange}
+            />
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Botones */}
+            <Box display="flex" gap={2}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                startIcon={<AssessmentIcon />}
+                sx={{ flex: 1 }}
+              >
+                Ingresar Dictamen
+              </Button>
+              <Button
+                type="button"
+                variant="outlined"
+                color="secondary"
+                startIcon={<CleaningServicesIcon />}
+                sx={{ flex: 1 }}
+                onClick={() =>
+                  setFormData({
+                    cie10: "",
+                    algoritmoBaltazar: "",
+                    paciente: "",
+                    diagnostico: "",
+                    fecha: "",
+                    observaciones: "",
+                    puntuacionBaltazar: 0,
+                    resultado: "",
+                    medicoId: "",
+                  })
+                }
+              >
+                Limpiar Formulario
+              </Button>
+            </Box>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Resultado */}
       {formData.resultado && (
-        <div className="mt-4 card p-3">
-          <h5>Resultado Simulado del Dictamen</h5>
-          <p><strong>Resultado Algoritmo Baltazar:</strong> {formData.resultado}</p>
-          <p><strong>CIE-10 Seleccionado:</strong> {formData.cie10}</p>
-          <p><strong>Diagnóstico:</strong> {formData.diagnostico.substring(0, 100)}...</p>
-        </div>
+        <Card sx={{ mt: 3, boxShadow: 2 }}>
+          <CardContent>
+            <Typography variant="h6">Resultado Simulado del Dictamen</Typography>
+            <Typography>
+              <strong>Resultado Algoritmo Baltazar:</strong>{" "}
+              {formData.resultado}
+            </Typography>
+            <Typography>
+              <strong>CIE-10 Seleccionado:</strong> {formData.cie10}
+            </Typography>
+            <Typography>
+              <strong>Diagnóstico:</strong>{" "}
+              {formData.diagnostico.substring(0, 100)}...
+            </Typography>
+          </CardContent>
+        </Card>
       )}
-
-      <div className="mt-3 alert alert-secondary">
-        <small>Simulando conexión con backend (API REST): POST /api/dictamen con datos del formulario.</small>
-      </div>
-    </div>
+    </Box>
   );
 };
 

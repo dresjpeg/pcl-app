@@ -1,12 +1,20 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import AppWrapper from './App';
-import './index.css';
+import App from './App';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <AppWrapper />
-  </React.StrictMode>
+const theme = createTheme({
+  palette: {
+    mode: 'light', // cambia a 'dark' si prefieres oscuro
+    primary: { main: '#1976d2' },
+    secondary: { main: '#9c27b0' },
+  },
+});
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <App />
+  </ThemeProvider>
 );
